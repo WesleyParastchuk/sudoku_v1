@@ -10,6 +10,7 @@ const [GB, numberToShow] = [3, 25]; //numbers GB === gameBlocks
 const [rowId, columnId] = ["Row:", "Column:"]; //strings
 const [gameMatriz, numbersToSelect] = [[],[...allNumbers()]]; //arrays
 
+var sameNumbers;
 const sudokuSelector = document.querySelector(".sudoku"); //selectors
 
 function createLine(){
@@ -64,6 +65,7 @@ function showNumbersInGame(){
             newButton.classList.add(blockClass(i,j));
             if (showThisSpace()){
                 newButton.innerHTML = gameMatriz[i][j];
+                newButton.classList.add("blocked");
             }
             sudokuSelector.appendChild(newButton);
         }
@@ -72,11 +74,32 @@ function showNumbersInGame(){
 
 function pickDecendents(centerPosition){
     let [row, column] = getId(centerPosition);
-    let decendents = Array.from(document.querySelectorAll("button")).filter(botao=>{
+    let botoes = document.querySelectorAll("button");
+    let decendents = Array.from(botoes).filter(botao=>{
         if(botao.id.includes(rowId+row.toString()) || botao.id.includes(columnId + column.toString()))
             return botao;
     })
+    let [motherRow, motherColumn] = [Math.floor(row/GB), Math.floor(column/GB)]
+    let block = [];
+    for(let i = 0; i < GB; i++){
+        for(let j = 0; j < GB; j++){
+           block.push(botoes[(motherRow*GB*GB*GB)+(motherColumn*GB)+j+(i*9)]);
+        }
+    }
+    for(let i = 0; i < GB*GB; i++){
+        if(decendents.includes(block[i])){
+            continue;
+        }else{
+            decendents.push(block[i])
+        }
+    }
     return decendents;
+}
+
+function removeError(){
+    if(buttonToChange.target.classList.contains("error")){
+        buttonToChange.target.classList.remove("error");
+    }
 }
 
 function createClickCheck(){
@@ -84,16 +107,34 @@ function createClickCheck(){
     bts.forEach(button=>{
         button.addEventListener("click", event=>{
             if(buttonToChange){
+                if(buttonToChange.target.classList.contains("error")){
+                    buttonToChange.target.classList.remove("error");
+                    buttonToChange.target.innerHTML = "";
+                }
                 document.querySelector(".clicked").classList.remove("clicked");
                 Array.from(document.querySelectorAll(".decendent")).forEach(decendent=>{
                     decendent.classList.remove("decendent")
                 })
+                sameNumbers = document.querySelectorAll(".sameNumber");
+                if(sameNumbers){
+                    sameNumbers.forEach(element =>{
+                        element.classList.remove("sameNumber");
+                    })
+                }
             }
             event.target.classList.add("clicked");
             pickDecendents(event.target.id).forEach(decendent=>{
                 if(!decendent.classList.contains("clicked"))
                     decendent.classList.add("decendent")
             })
+            let number = event.target.innerHTML;
+            if(number){
+                bts.forEach(botao=>{
+                    if(botao.innerHTML==number.toString()){
+                        botao.classList.add("sameNumber")
+                    }
+                })
+            }
             buttonToChange = event;
         })
     })
@@ -151,15 +192,21 @@ function checkValues(novoValor){
     let [rowAdr, columnAdr] = getId(buttonToChange.target.id);
     if(checkRow(rowAdr, novoValor) && checkColumn(columnAdr, novoValor) && checkBox(rowAdr, columnAdr, novoValor)){
         buttonToChange.target.innerHTML = Number(novoValor);
+    }else if(!buttonToChange.target.classList.contains("blocked")){
+        buttonToChange.target.innerHTML = novoValor;
+        buttonToChange.target.classList.add("error");
     }
     
 }
 
 function createSetNumbersEvent(){
-    sudokuSelector.addEventListener("keypress", (event)=>{
+    sudokuSelector.addEventListener("keydown", (event)=>{
         event.preventDefault();
-        if(buttonToChange.target && numbersToSelect.includes(event.key)){
+        if(buttonToChange.target && numbersToSelect.includes(event.key) && !buttonToChange.target.classList.contains("blocked")){
+            removeError();
             checkValues(event.key);
+        }else if(event.key == "Backspace" && !buttonToChange.target.classList.contains("blocked")){
+            buttonToChange.target.innerHTML = ""
         }
     })
 }
@@ -174,5 +221,4 @@ function createGame(){
 
 createGame();
 
-//ADD função de apagar
-//Aparecer posição errada
+//win-game
