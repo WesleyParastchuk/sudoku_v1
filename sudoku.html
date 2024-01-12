@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku</title>
+    <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/6258/6258392.png" type="url">
+
+</head>
+
+<body>
+    <header>
+        <p>Sudoku</p>
+    </header>
+    <main class="sudoku">
+
+    </main>
+    <style>
+        * {
+            margin: 0;
+            border: 0;
+            padding: 0;
+        }
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-evenly;
+            background: linear-gradient(#e3eced, #087b8b)
+        }
+
+        header {
+            display: flex;
+            height: 18%;
+            width: 35%;
+            font-size: 8rem;
+            font-family: 'Times New Roman', Times, serif;
+            background: linear-gradient(lightblue, lightskyblue);
+            padding: 15px 40px;
+            border-radius: 20px;
+            box-shadow: 0 0 2px 2px black;
+            border-color: white;
+            border-style: solid;
+            border-width: 3px;
+            cursor: default;
+            text-align: center;
+            align-items: center;
+            justify-content: center;
+        }
+
+        main {
+            background-color: black;
+            height: 450px;
+            width: 450px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            border-color: black;
+            border-width: 5px;
+            border-style: solid;
+            border-radius: 5px;
+        }
+
+        .number {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 25px;
+            height: 50px;
+            width: 50px;
+            border-color: black;
+            border-style: solid;
+            border-width: 0.5px;
+            border-radius: 3.5px;
+            color: rgb(3, 3, 63);
+        }
+
+        .par {
+            background-color: white;
+        }
+
+        .impar {
+            background-color: lightskyblue;
+        }
+
+        .clicked {
+            background-color: gray;
+        }
+
+        .decendent {
+            background-color: silver;
+        }
+
+        .blocked {
+            font-weight: 600;
+            color: black;
+        }
+
+        .error {
+            background-color: red;
+        }
+
+        .sameNumber {
+            color: rgb(9, 78, 9);
+            font-size: 35px;
+        }
+    </style>
+    <script>
+        const sudokuSelector = document.querySelector(".sudoku");
+        const [size, totalNumbersToShow, spaceEmpty] = [3, 35, ""];
+        const [rowId, columnId] = ["Row:", "Column:"];
+        const [gameMatriz, allNumbers] = [
+            [],
+            [...possibleNumbers()]
+        ];
+        let buttonToChange, bts;
+
+        const [numberType, buttonElement] = ["button", "button"];
+        const [numberClass, parClass, imparClass, blockedClass, errorClass, clickedClass, sameNumberClass, decendentClass] = [".number", ".par", ".impar", ".blocked", ".error", ".clicked", ".sameNumber", ".decendent"]
+
+        function possibleNumbers() {
+            array = [];
+            for (let i = 1; i < (size * size) + 1; i++)
+                array.push(i.toString());
+            return array;
+        }
+
+        function createEmptyGame() {
+            let lineSpaces = createLine();
+            for (let i = 0; i < size * size; i++)
+                gameMatriz.push([...lineSpaces]);
+        }
+
+        function createLine() {
+            let array = [];
+            for (let i = 0; i < size * size; i++)
+                array.push(spaceEmpty);
+            return array;
+        }
+
+        function createNumbers() {
+            for (let i = 0; i < size * size; i++)
+                for (let j = 0; j < size * size; j++)
+                    gameMatriz[i][j] = (((i * size) + j + Math.floor(i / size)) % (size * size)) + 1;
+            randonizeNumbers();
+        }
+
+        function randonizeNumbers() {
+            randonizeRows();
+            randonizeColunm();
+        }
+
+        function randonizeRows() {
+            for (let i = 0; i < size * size; i++) {
+                let row = Math.floor(Math.random() * size) + Math.floor(i / size) * size;
+                [gameMatriz[i], gameMatriz[row]] = [gameMatriz[row], gameMatriz[i]];
+            }
+        }
+
+        function randonizeColunm() {
+            let matrizPorColuna = getColumnsOfMatriz();
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    let column = (Math.floor(Math.random() * size) * size) + j;
+                    [matrizPorColuna[j], matrizPorColuna[column]] = [matrizPorColuna[column], matrizPorColuna[j]];
+                }
+            }
+            for (let i = 0; i < size * size; i++)
+                for (let j = 0; j < size * size; j++)
+                    gameMatriz[i][j] = matrizPorColuna[j][i];
+        }
+
+        function getColumnsOfMatriz() {
+            let newMatriz = [];
+            for (let i = 0; i < size * size; i++) {
+                let coluna = [];
+                for (let j = 0; j < size * size; j++) {
+                    coluna.push(gameMatriz[j][i]);
+                }
+                newMatriz.push(coluna);
+            }
+            return newMatriz;
+        }
+
+        function showGame() {
+            for (let i = 0; i < size * size; i++) {
+                for (let j = 0; j < size * size; j++) {
+                    let newButton = createNumberButton();
+                    newButton.id = `${rowId + i} ${columnId + j}`;
+                    newButton.classList.add(blockClasses(i, j));
+                    if (showThisSpace()) {
+                        newButton.innerHTML = gameMatriz[i][j];
+                        newButton.classList.add(blockedClass.substring(1));
+                    }
+                    sudokuSelector.appendChild(newButton);
+                }
+            }
+        }
+
+        function createNumberButton() {
+            let newButton = document.createElement(buttonElement);
+            newButton.type = numberType;
+            newButton.classList.add(numberClass.substring(1));
+            return newButton;
+        }
+
+        function blockClasses(x, y) {
+            if ((testBlockOdd(x) && testBlockOdd(y)) || (!testBlockOdd(x) && !testBlockOdd(y)))
+                return parClass.substring(1);
+            return imparClass.substring(1);
+        }
+
+        function testBlockOdd(value) {
+            return (Math.floor(value / size) % 2) == 0;
+        }
+
+        function showThisSpace() {
+            if (Math.floor(Math.random() * ((size * size * size * size) + 1)) < totalNumbersToShow)
+                return true;
+            return false;
+        }
+
+        /*01100101 01110101 00100000 01110100 01100101 01101110 01101000 01101111 00100000 01110011 01100101 01101110 01110100 01101001 01101101 01100101 01101110 01110100 01101111 01110011 00100000 01110000 01101111 01110010 00100000 01110110 01101111 01100011 11101010*/
+
+        function createEvents() {
+            createClickEvent();
+            createSetNumbersEvent();
+        }
+
+        function createClickEvent() {
+            bts = document.querySelectorAll(numberClass)
+            bts.forEach(button => {
+                button.addEventListener("click", event => {
+                    if (buttonToChange) {
+                        deleteOldClick();
+                    }
+                    event.target.classList.add(clickedClass.substring(1));
+                    setDecendents(event);
+                    buttonToChange = event;
+                    setSameNumbers();
+                })
+            })
+        }
+
+        function deleteOldClick() {
+            removeError(true);
+            deleteDecendents();
+            document.querySelector(clickedClass).classList.remove(clickedClass.substring(1));
+            deleteSameNumbers();
+        }
+
+        function removeError(plus = false) {
+            if (buttonToChange.target.classList.contains(errorClass.substring(1))) {
+                buttonToChange.target.classList.remove(errorClass.substring(1));
+                if (plus)
+                    buttonToChange.target.innerHTML = spaceEmpty;
+            }
+        }
+
+        function deleteDecendents() {
+            Array.from(document.querySelectorAll(decendentClass)).forEach(decendent => {
+                decendent.classList.remove(decendentClass.substring(1))
+            })
+        }
+
+        function deleteSameNumbers() {
+            let sameNumbers = document.querySelectorAll(sameNumberClass);
+            if (sameNumbers) {
+                sameNumbers.forEach(element => {
+                    element.classList.remove(sameNumberClass.substring(1));
+                })
+            }
+        }
+
+        function createSetNumbersEvent() {
+            sudokuSelector.addEventListener("keydown", (event) => {
+                event.preventDefault();
+                if (buttonToChange.target.classList.contains(blockedClass.substring(1)))
+                    return;
+                if (buttonToChange.target) {
+                    if (allNumbers.includes(event.key)) {
+                        removeError();
+                        checkValues(event.key);
+                    } else if (event.key == "Backspace") {
+                        buttonToChange.target.innerHTML = spaceEmpty;
+                    }
+                }
+            })
+        }
+
+        function checkValues(novoValor) {
+            let [rowAdr, columnAdr] = getId(buttonToChange.target.id);
+            if (checkRow(rowAdr, novoValor) && checkColumn(columnAdr, novoValor) && checkBox(rowAdr, columnAdr, novoValor)) {
+                buttonToChange.target.innerHTML = novoValor;
+                setSameNumbers();
+                if ((Array.from(document.querySelectorAll(numberClass)).find(element => element.innerHTML == "") == undefined))
+                    winGame();
+            } else {
+                buttonToChange.target.innerHTML = novoValor;
+                buttonToChange.target.classList.add(errorClass.substring(1));
+            }
+        }
+
+        function getId(idCompleto) {
+            let row = idCompleto.slice(idCompleto.indexOf(rowId) + rowId.length, idCompleto.indexOf(rowId) + rowId.length + 1);
+            let column = idCompleto.slice(idCompleto.indexOf(columnId) + columnId.length, idCompleto.indexOf(columnId) + columnId.length + 1);
+            return [row, column];
+        }
+
+        function checkRow(rowToCheck, newNumber) {
+            return checkLine(rowId, rowToCheck, newNumber);
+        }
+
+        function checkColumn(columnToCheck, newNumber) {
+            return checkLine(columnId, columnToCheck, newNumber);
+        }
+
+        function checkLine(typeOfLineId, lineToCheck, newNumber) {
+            let newList = getLine(typeOfLineId, lineToCheck).find(element => element.innerHTML == newNumber);
+            return newList ? false : true;
+        }
+
+        function getLine(typeOfLineId, lineToCheck) {
+            return Array.from(document.querySelectorAll(numberClass)).filter(botao => {
+                if (botao.id.includes(typeOfLineId + lineToCheck.toString()))
+                    return botao;
+            })
+        }
+
+        function checkBox(row, column, newNumber) {
+            let boxIds = getHowIds(row, column);
+            let existInTheHow = Array.from(document.querySelectorAll(numberClass)).find(elemento => {
+                if (boxIds.includes(elemento.id) && elemento.innerHTML == newNumber) {
+                    return true;
+                }
+            })
+            return existInTheHow ? false : true;
+        }
+
+        function getHowIds(row, column) {
+            let howIds = [];
+            let [motherRow, motherColumn] = [Math.floor(row / size), Math.floor(column / size)];
+            for (let i = 0; i < size; i++)
+                for (let j = 0; j < size; j++)
+                    howIds.push(`${rowId + (motherRow * size + i).toString()} ${columnId + (motherColumn * size + j).toString()}`);
+            return howIds;
+        }
+
+
+        function setDecendents(event) {
+            pickDecendents(event.target.id).forEach(decendent => {
+                if (!decendent.classList.contains(clickedClass.substring(1)))
+                    decendent.classList.add(decendentClass.substring(1))
+            })
+        }
+
+        function pickDecendents(centerPosition) {
+            let [row, column] = getId(centerPosition);
+            let botoes = document.querySelectorAll(numberClass);
+            let decendents = new Set();
+            Array.from(botoes).filter(botao => {
+                if (botao.id.includes(rowId + row.toString()) || botao.id.includes(columnId + column.toString()))
+                    return botao;
+            }).forEach(botao => decendents.add(botao));
+            getDecendentsOfBlock(row, column, botoes).forEach(botao => decendents.add(botao));
+            return Array.from(decendents);
+        }
+
+        function getDecendentsOfBlock(row, column, botoes) {
+            let [motherRow, motherColumn] = [Math.floor(row / size), Math.floor(column / size)]
+            let block = [];
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    block.push(botoes[(motherRow * size * size * size) + (motherColumn * size) + j + (i * size * size)]);
+                }
+            }
+            return block;
+        }
+
+
+        function setSameNumbers() {
+            let number = buttonToChange.target.innerHTML;
+            if (number) {
+                bts.forEach(botao => {
+                    if (botao.innerHTML == number.toString()) {
+                        botao.classList.add(sameNumberClass.substring(1))
+                    }
+                })
+            }
+        }
+
+        function winGame() {
+            window.open("https://www.youtube.com/watch?v=pwWA96FKzQY", "_blank");
+        }
+
+        function createGame() {
+            createEmptyGame();
+            createNumbers();
+            showGame();
+            createEvents();
+        }
+        createGame();
+    </script>
+</body>
+
+</html>
